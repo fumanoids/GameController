@@ -5,7 +5,7 @@ import java.awt.Color;
 /**
  *
  * @author Michel-Zen
- * 
+ *
  * This class sets attributes given by the humanoid-league rules.
  */
 public class HL extends Rules
@@ -76,5 +76,7 @@ public class HL extends Rules
         isCoachAvailable = false;
         /** Allowed to compensate for lost time? */
         lostTime = false;
+        /** Whether compatibility mode (version 7) is supported **/
+        compatibilityToVersion7 = true;
     }
 }
