@@ -5,11 +5,11 @@ import java.awt.Color;
 
 /**
  * @author Michel Bartsch
- * 
+ *
  * This class holds attributes defining rules.
  */
 public abstract class Rules
-{   
+{
     /** Note all league´s rules here to have them available. */
     public static final Rules[] LEAGUES = {
         new SPL(),
@@ -17,7 +17,7 @@ public abstract class Rules
         new HLTeen(),
         new HLAdult()
     };
-    
+
     /** The rules of the league playing. */
     public static Rules league = LEAGUES[0];
     /** The league´s name this rules are for. */
@@ -76,7 +76,7 @@ public abstract class Rules
     public int timeOutTime;
     /** Time in seconds of a referee timeout*/
     public int refereeTimeout;
-    /** Defines if the option for a referee timeout is available. */ 
+    /** Defines if the option for a referee timeout is available. */
     public boolean isRefereeTimeoutAvailable;
     /** One time-out per half? */
     public boolean timeOutPerHalf;
@@ -86,4 +86,6 @@ public abstract class Rules
     public boolean isCoachAvailable;
     /** Allowed to compensate for lost time? */
     public boolean lostTime;
+    /** Whether compatibility mode (version 7) is supported **/
+    public boolean compatibilityToVersion7;
 }

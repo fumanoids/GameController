@@ -3,6 +3,7 @@ package controller.net;
 import common.Log;
 import data.AdvancedData;
 import data.GameControlData;
+import data.Rules;
 
 import java.io.IOException;
 import java.net.*;
@@ -26,7 +27,7 @@ public class Sender extends Thread
 
     /** The packet number that is increased with each packet sent. */
     private byte packetNumber = 0;
-    
+
     /** The socket, which is used to send the current game-state */
     private final DatagramSocket datagramSocket;
 
@@ -108,6 +109,20 @@ public class Sender extends Thread
                 } catch (IOException e) {
                     Log.error("Error while sending");
                     e.printStackTrace();
+                }
+            }
+
+            if (data != null) {
+                if (Rules.league.compatibilityToVersion7) {
+                    byte[] arr = data.toByteArray7().array();
+                    DatagramPacket packet = new DatagramPacket(arr, arr.length, group, GameControlData.GAMECONTROLLER_PORT);
+
+                    try {
+                        datagramSocket.send(packet);
+                    } catch (IOException e) {
+                        Log.error("Error while sending");
+                        e.printStackTrace();
+                    }
                 }
             }
 

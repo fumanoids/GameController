@@ -5,7 +5,7 @@ import java.awt.Color;
 /**
  *
  * @author Michel-Zen
- * 
+ *
  * This class sets attributes given by the spl rules.
  */
 public class SPL extends Rules
@@ -78,5 +78,7 @@ public class SPL extends Rules
         isCoachAvailable = true;
         /** Allowed to compensate for lost time? */
         lostTime = true;
+        /** Whether compatibility mode (version 7) is supported **/
+        compatibilityToVersion7 = false;
     }
 }
