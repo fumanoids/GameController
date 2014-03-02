@@ -31,8 +31,14 @@ public class PlayerInfo implements Serializable
     public static final byte PENALTY_HL_PHYSICAL_CONTACT = 2;
     public static final byte PENALTY_HL_ILLEGAL_ATTACK = 3;
     public static final byte PENALTY_HL_ILLEGAL_DEFENSE = 4;
+<<<<<<< HEAD
+    public static final byte PENALTY_HL_REQUEST_FOR_PICKUP = 5;
+    public static final byte PENALTY_HL_REQUEST_FOR_SERVICE = 6;
+    public static final byte PENALTY_HL_TEEN_REQUEST_FOR_PICKUP_2_SERVICE = 7;
+=======
     public static final byte PENALTY_HL_PICKUP_OR_INCAPABLE = 5;
     public static final byte PENALTY_HL_SERVICE = 6;
+>>>>>>> hl-penalties
 
     public static final byte PENALTY_SUBSTITUTE = 14;
     public static final byte PENALTY_MANUAL = 15;
