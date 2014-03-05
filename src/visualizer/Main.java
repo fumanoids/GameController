@@ -1,5 +1,6 @@
 package visualizer;
 
+import common.Log;
 import data.Rules;
 
 /**
@@ -19,7 +20,7 @@ public class Main
     private final static String COMMAND_LEAGUE_SHORT = "-l";
     
     private static Listener listener;
-    
+
     /**
      * The programm starts here.
      * 
@@ -46,19 +47,21 @@ public class Main
         GUI gui = new GUI();
         new KeyboardListener(gui);
         listener = new Listener(gui);
-        Thread network = new Thread(listener);
-        network.start();
+        listener.start();
     }
     
     /**
      * This should be called when the programm is shutting down to close
      * sockets and finally exit.
-     * 
-     * @param args  This is ignored.
      */
     public static void exit()
     {
-        listener.close();
+        listener.interrupt();
+        try {
+            listener.join();
+        } catch (InterruptedException e) {
+            Log.error("Waiting for listener to shutdown was interrupted.");
+        }
         System.exit(0);
     }
 }

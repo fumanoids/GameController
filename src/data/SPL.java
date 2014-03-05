@@ -80,5 +80,7 @@ public class SPL extends Rules
         lostTime = true;
         /** Whether compatibility mode (version 7) is supported **/
         compatibilityToVersion7 = false;
+        /** If true, the drop-in player competition is active*/
+        dropInPlayerMode = false;
     }
 }
