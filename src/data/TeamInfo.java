@@ -92,7 +92,7 @@ public class TeamInfo implements Serializable
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.put(teamNumber);
         buffer.put(teamColor);
-        buffer.put(teamColor); // goal color
+        buffer.put((byte) 1); // goal color is always yellow
         buffer.put(score);
         for (int i=0; i<MAX_NUM_PLAYERS; i++) {
             buffer.put(player[i].toByteArray7());
