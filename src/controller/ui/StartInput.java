@@ -33,7 +33,7 @@ public class StartInput extends JFrame implements Serializable
      */
     private static final String WINDOW_TITLE = "GameController";
     private static final int WINDOW_WIDTH = 600;
-    private static final int WINDOW_HEIGHT = 480;
+    private static final int WINDOW_HEIGHT = 450;
     private static final int STANDARD_SPACE = 10;
     private static final int TEAMS_HEIGHT = 300;
     private static final int IMAGE_SIZE = 250;
@@ -86,7 +86,6 @@ public class StartInput extends JFrame implements Serializable
     {
         super(WINDOW_TITLE);
 
-        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         Dimension desktop = Toolkit.getDefaultToolkit().getScreenSize();
         setLocation((desktop.width-WINDOW_WIDTH)/2, (desktop.height-WINDOW_HEIGHT)/2);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -249,6 +248,9 @@ public class StartInput extends JFrame implements Serializable
                 }});
                 
         league.getActionListeners()[league.getActionListeners().length - 1].actionPerformed(null);
+
+        getContentPane().setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+        pack();
         setVisible(true);
     }
     /** Show in the combo box which teams are available for the selected league and competition*/
