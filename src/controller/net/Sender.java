@@ -115,7 +115,7 @@ public class Sender extends Thread
             if (data != null) {
                 if (Rules.league.compatibilityToVersion7) {
                     byte[] arr = data.toByteArray7().array();
-                    DatagramPacket packet = new DatagramPacket(arr, arr.length, group, GameControlData.GAMECONTROLLER_PORT);
+                    DatagramPacket packet = new DatagramPacket(arr, arr.length, group, GameControlData.GAMECONTROLLER_GAMEDATA_PORT);
 
                     try {
                         datagramSocket.send(packet);
