@@ -148,8 +148,14 @@ public class GameControlData implements Serializable
         buffer.put(dropInTeam);
         buffer.putShort(dropInTime);
         buffer.putInt(secsRemaining);
-        for (TeamInfo aTeam : team) {
-            buffer.put(aTeam.toByteArray7());
+
+        // in version 7, the broadcasted team data was sorted by team color
+        if (team[0].teamColor == TEAM_BLUE) {
+            buffer.put(team[0].toByteArray7());
+            buffer.put(team[1].toByteArray7());
+        } else {
+            buffer.put(team[1].toByteArray7());
+            buffer.put(team[0].toByteArray7());
         }
 
         return buffer;
