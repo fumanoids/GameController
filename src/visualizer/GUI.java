@@ -85,23 +85,8 @@ public class GUI extends JFrame
             devices[IS_OSX && !IS_APPLE_JAVA ? 0 : devices.length-1].setFullScreenWindow(this);
         }
 
-        for (String format : new String [] {".png", ".jpeg", ".jpg"}) {
-            try {
-                background = ImageIO.read(new File(CONFIG_PATH+Rules.league.leagueDirectory+"/"+BACKGROUND+format));
-            } catch (IOException e) {
-            }
-        }
-        if (background == null) {
-            Log.error("Unable to load background image");
-        }
-        float scaleFactor = (float)getWidth()/background.getWidth();
-        Image tmp = (new ImageIcon(background).getImage()).getScaledInstance(
-                (int)(background.getWidth()*scaleFactor),
-                (int)(background.getHeight()*scaleFactor),
-                Image.SCALE_SMOOTH);
-        background = new BufferedImage((int) (background.getWidth() * scaleFactor), (int) (background.getWidth() * scaleFactor), BufferedImage.TYPE_INT_ARGB);
-        background.getGraphics().drawImage(tmp, 0, 0, null);
-        
+        loadBackground();
+
         testFont = new Font(TEST_FONT, Font.PLAIN, (int)(TEST_FONT_SIZE*getWidth()));
         standardFont = new Font(STANDARD_FONT, Font.PLAIN, (int)(STANDARD_FONT_SIZE*getWidth()));
         standardSmallFont = new Font(STANDARD_FONT, Font.PLAIN, (int)(STANDARD_FONT_S_SIZE*getWidth()));
