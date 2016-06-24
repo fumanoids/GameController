@@ -6,6 +6,7 @@
   <property name="classes.dir" value="${build.dir}/classes"/>
   <property name="jar.dir"     value="${build.dir}/jar"/>
   <property name="resources.dir"  value="resources" />
+  <property name="startscripts.dir"  value="startscripts" />
 
   <target name="clean">
     <delete dir="${build.dir}" quiet="true" />
@@ -44,6 +45,10 @@
     <copy todir="${jar.dir}" overwrite="true">
       <fileset dir="${resources.dir}" />
     </copy>
+    <copy todir="${jar.dir}" overwrite="true">
+      <fileset dir="${startscripts.dir}" />
+    </copy>
+    <chmod file="${jar.dir}/*.bash" perm="ugo+x" />
     <copy todir="${jar.dir}/include" overwrite="true">
       <fileset dir="${include.dir}" />
     </copy>
