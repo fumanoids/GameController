@@ -21,6 +21,6 @@ public class MyUnitTest {
     public void test_something2(){
         ClockTick c = new ClockTick();
         boolean legal = c.isLegal(new AdvancedData());
-        assertEquals(legal, false);
+        assertEquals(legal, true);
     }
 }
