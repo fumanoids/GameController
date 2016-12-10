@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sheepsy90/GameController.svg?branch=master)](https://travis-ci.org/sheepsy90/GameController)
+
 # RoboCup SPL and Humanoid League GameController
 
 This is the GameController developed by team B-Human for the RoboCup SPL and
