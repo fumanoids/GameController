@@ -1,9 +1,5 @@
 package controller.ui;
 
-import data.Rules;
-import data.SPL;
-import data.SPLDropIn;
-import data.Teams;
 import java.awt.BorderLayout;
 import java.awt.Checkbox;
 import java.awt.Color;
@@ -13,13 +9,27 @@ import java.awt.Graphics;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
 import java.io.Serializable;
-import javax.swing.*;
+import java.util.Arrays;
+import java.util.HashMap;
+
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+
+import data.GameControlData;
+import data.Rules;
+import data.SPL;
+import data.SPLDropIn;
+import data.Teams;
 
 
 /**
@@ -47,8 +57,8 @@ public class StartInput extends JFrame implements Serializable
     /** This is not what the name says ;) */
     private static final int FULLSCREEN_WIDTH = 160;
     private static final String ICONS_PATH = "config/icons/";
-    private static final String[] BACKGROUND_SIDE = {"robot_left_blue.png",
-                                                        "robot_right_red.png"};
+    private static final String[] BACKGROUND_PREFIX = {"robot_left_", "robot_right_"};
+    private static final String BACKGROUND_EXT = ".png";
     private static final String FULLTIME_LABEL_NO = "Preliminaries Game";
     private static final String FULLTIME_LABEL_YES = "Play-off Game";
     private static final String FULLTIME_LABEL_HL_NO = "Normal Game";
@@ -56,36 +66,44 @@ public class StartInput extends JFrame implements Serializable
     private static final String FULLSCREEN_LABEL = "Fullscreen";
     private static final String COLOR_CHANGE_LABEL = "Auto color change";
     private static final String START_LABEL = "Start";
+    private static final String TEAM_COLOR_CHANGE = "Color";
     
     /** If true, this GUI has finished and offers it`s input. */
     public boolean finished = false;
 
     /** The inputs that can be read from this GUI when it has finished. */
     public int[] outTeam = {0, 0};
+    public byte[] outTeamColor = new byte[2];
     public boolean outFulltime;
     public boolean outFullscreen;
     public boolean outAutoColorChange;
 
     /** All the components of this GUI. */
     private ImagePanel[] teamContainer = new ImagePanel[2];
+    private JPanel[] teamChooseContainer = new JPanel[2];
     private ImageIcon[] teamIcon = new ImageIcon[2];
+    private JButton[] teamColorChange = new JButton[2];
     private JLabel[] teamIconLabel = new JLabel[2];
-    private JComboBox[] team = new JComboBox[2];
+    @SuppressWarnings("unchecked")
+    private JComboBox<String>[] team = (JComboBox<String>[]) new JComboBox[2];
     private JPanel optionsLeft;
     private JPanel optionsRight;
-    private JComboBox league;
+    private JComboBox<String> league;
     private JRadioButton nofulltime;
     private JRadioButton fulltime;
     private ButtonGroup fulltimeGroup;
     private Checkbox fullscreen;
     private Checkbox autoColorChange;
     private JButton start;
+    
+    private String[][] colorNames = new String[2][];
+
+    private HashMap<String, Image> images = new HashMap<String, Image>();
 
     /**
      * Creates a new StartInput.
      * @param args The parameters that the jar file was started with.
      */
-    @SuppressWarnings("unchecked")
     public StartInput(boolean fullscreenMode)
     {
         super(WINDOW_TITLE);
@@ -100,8 +118,7 @@ public class StartInput extends JFrame implements Serializable
         
         String[] teams = getShortTeams();
         for (int i=0; i<2; i++) {
-            teamContainer[i] = new ImagePanel((
-                    new ImageIcon(ICONS_PATH+Rules.league.leagueDirectory+"/"+BACKGROUND_SIDE[i])).getImage());
+            teamContainer[i] = new ImagePanel(getImage(i, i == 0 ? "blue" : "red"));
             teamContainer[i].setPreferredSize(new Dimension(WINDOW_WIDTH/2-STANDARD_SPACE, TEAMS_HEIGHT));
             teamContainer[i].setOpaque(true);
             teamContainer[i].setLayout(new BorderLayout());
@@ -109,23 +126,57 @@ public class StartInput extends JFrame implements Serializable
             setTeamIcon(i, 0);
             teamIconLabel[i] = new JLabel(teamIcon[i]);
             teamContainer[i].add(teamIconLabel[i], BorderLayout.CENTER);
-            team[i] = new JComboBox(teams);
-            teamContainer[i].add(team[i], BorderLayout.SOUTH);
+            team[i] = new JComboBox<String>(teams);
+            teamChooseContainer[i] = new JPanel(new BorderLayout());
+            teamContainer[i].add(teamChooseContainer[i], BorderLayout.SOUTH);
+            teamChooseContainer[i].add(team[i], BorderLayout.CENTER);
+            colorNames[i] = new String[]{"red", "blue"};
+            teamColorChange[i] = new JButton(TEAM_COLOR_CHANGE);
         }
+        teamChooseContainer[0].add(teamColorChange[0], BorderLayout.WEST);
+        teamChooseContainer[1].add(teamColorChange[1], BorderLayout.EAST);
+
+        teamColorChange[0].addActionListener(new ActionListener()
+            {
+            @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    switchTeamColor(0);
+                    updateBackgrounds();
+                    teamIconLabel[0].repaint();
+                    teamIconLabel[1].repaint();
+                }
+            }
+        );
+        teamColorChange[1].addActionListener(new ActionListener()
+            {
+            @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    switchTeamColor(1);
+                    updateBackgrounds();
+                    teamIconLabel[0].repaint();
+                    teamIconLabel[1].repaint();
+                }
+            }
+        );
+
         team[0].addActionListener(new ActionListener()
             {
             @Override
                 public void actionPerformed(ActionEvent e)
                 {
                     Object selected = team[0].getSelectedItem();
-                    if (selected == null)
-                    {
+                    if (selected == null) {
                         return;
                     }
                     outTeam[0] = Integer.valueOf(((String)selected).split(" \\(")[1].split("\\)")[0]);
+                    reloadTeamColor(0);
+                    updateBackgrounds();
                     setTeamIcon(0, outTeam[0]);
                     teamIconLabel[0].setIcon(teamIcon[0]);
                     teamIconLabel[0].repaint();
+                    teamIconLabel[1].repaint();
                     startEnabling();
                 }
             }
@@ -136,13 +187,15 @@ public class StartInput extends JFrame implements Serializable
                 public void actionPerformed(ActionEvent e)
                 {
                     Object selected = team[1].getSelectedItem();
-                    if (selected == null)
-                    {
+                    if (selected == null){
                         return;
                     }
                     outTeam[1] = Integer.valueOf(((String)selected).split(" \\(")[1].split("\\)")[0]);
+                    reloadTeamColor(1);
+                    updateBackgrounds();
                     setTeamIcon(1, outTeam[1]);
                     teamIconLabel[1].setIcon(teamIcon[1]);
+                    teamIconLabel[0].repaint();
                     teamIconLabel[1].repaint();
                     startEnabling();
                 }
@@ -176,7 +229,7 @@ public class StartInput extends JFrame implements Serializable
         optionsRight.setPreferredSize(new Dimension(WINDOW_WIDTH/2-2*STANDARD_SPACE, OPTIONS_CONTAINER_HEIGHT));
         add(optionsRight);
         Dimension optionsDim = new Dimension(WINDOW_WIDTH/3-2*STANDARD_SPACE, OPTIONS_HEIGHT);
-        league = new JComboBox();
+        league = new JComboBox<String>();
         for (int i=0; i < Rules.LEAGUES.length; i++) {
             league.addItem(Rules.LEAGUES[i].leagueName);
             if (Rules.LEAGUES[i] == Rules.league) {
@@ -201,6 +254,8 @@ public class StartInput extends JFrame implements Serializable
                         nofulltime.setVisible(false);
                         fulltime.setVisible(false);
                         autoColorChange.setVisible(false);
+                        teamColorChange[0].setVisible(false);
+                        teamColorChange[1].setVisible(false);
                     } else {
                         nofulltime.setVisible(true);
                         fulltime.setVisible(true);
@@ -208,11 +263,15 @@ public class StartInput extends JFrame implements Serializable
                             nofulltime.setText(FULLTIME_LABEL_NO);
                             fulltime.setText(FULLTIME_LABEL_YES);
                             autoColorChange.setVisible(false);
+                            teamColorChange[0].setVisible(true);
+                            teamColorChange[1].setVisible(true);
                         } else {
                             nofulltime.setText(FULLTIME_LABEL_HL_NO);
                             fulltime.setText(FULLTIME_LABEL_HL_YES);
                             autoColorChange.setState(Rules.league.colorChangeAuto);
                             autoColorChange.setVisible(true);
+                            teamColorChange[0].setVisible(false);
+                            teamColorChange[1].setVisible(false);
                         }
                     }
                     showAvailableTeams();
@@ -262,9 +321,9 @@ public class StartInput extends JFrame implements Serializable
     /** Show in the combo box which teams are available for the selected league and competition*/
     private void showAvailableTeams() 
     {
+        outTeam[0] = 0;
+        outTeam[1] = 0;
         for (int i=0; i < 2; i++) {
-            teamContainer[i].setImage((
-                    new ImageIcon(ICONS_PATH+Rules.league.leagueDirectory+"/"+BACKGROUND_SIDE[i])).getImage());
             team[i].removeAllItems();
             String[] names = getShortTeams();
             if (Rules.league.dropInPlayerMode) {
@@ -275,7 +334,6 @@ public class StartInput extends JFrame implements Serializable
                     team[i].addItem(names[j]);
                 }
             }
-            outTeam[i] = 0;
             setTeamIcon(i, outTeam[i]);
             teamIconLabel[i].setIcon(teamIcon[i]);
             teamIconLabel[i].repaint();
@@ -352,6 +410,84 @@ public class StartInput extends JFrame implements Serializable
                 (fulltime.isSelected() || nofulltime.isSelected() || !fulltime.isVisible()));
     }
     
+    private Image getImage(int side, String color)
+    {
+        String filename = ICONS_PATH + Rules.league.leagueDirectory + "/" + BACKGROUND_PREFIX[side] + color + BACKGROUND_EXT;
+        if (images.get(filename) == null) {
+            images.put(filename, new ImageIcon(filename).getImage());
+        }
+        return images.get(filename);
+    }
+
+    private void switchTeamColor(final int team)
+    {
+        String tmpColorString = colorNames[team][0];
+        colorNames[team][0] = colorNames[team][1];
+        colorNames[team][1] = tmpColorString;
+        updateTeamColorIndicator(team);
+    }
+
+    private void updateTeamColorIndicator(final int team) {
+        teamColorChange[team].setToolTipText(String.format("Change to alternative team color (%s)", Rules.league.teamColorName[fromColorName(colorNames[team][1])]));
+        teamColorChange[team].setBackground(Rules.league.teamColor[fromColorName(colorNames[team][0])]);
+    }
+
+    private void reloadTeamColor(final int team)
+    {
+        colorNames[team] = Teams.getColors(outTeam[team]).clone();
+        if (colorNames[team] == null || colorNames[team].length == 0) {
+            colorNames[team] = new String[]{"blue", "red"};
+        } else if (colorNames[team].length == 1) {
+            colorNames[team] = new String[]{colorNames[team][0], !"red".equals(colorNames[team][0]) ? "red" : "blue"};
+        }
+        if (team == 1) {
+            String[] otherColors = Teams.getColors(outTeam[0]);
+            if ((otherColors == null || otherColors.length == 0)) {
+                otherColors = new String[]{"blue"};
+            }
+            if (colorNames[team][0].equals(otherColors[0])) {
+                switchTeamColor(1);
+            } else {
+                updateTeamColorIndicator(team);
+            }
+        } else {
+            updateTeamColorIndicator(team);
+        }
+    }
+
+    private void updateBackgrounds()
+    {
+        for (int i = 0; i < 2; ++i) {
+            teamContainer[i].setImage(getImage(i, colorNames[i][0]));
+            outTeamColor[i] = fromColorName(colorNames[i][0]);
+        }
+    }
+
+    private static byte fromColorName(final String colorName) {
+        switch (colorName) {
+            case "blue":
+                return GameControlData.TEAM_BLUE;
+            case "red":
+                return GameControlData.TEAM_RED;
+            case "yellow":
+                return GameControlData.TEAM_YELLOW;
+            case "black":
+                return GameControlData.TEAM_BLACK;
+            case "green":
+                return GameControlData.TEAM_GREEN;
+            case "orange":
+                return GameControlData.TEAM_ORANGE;
+            case "purple":
+                return GameControlData.TEAM_PURPLE;
+            case "brown":
+                return GameControlData.TEAM_BROWN;
+            case "gray":
+                return GameControlData.TEAM_GRAY;
+            default:
+                return GameControlData.TEAM_WHITE;
+        }
+    }
+
     /**
      * @author Michel Bartsch
      * 

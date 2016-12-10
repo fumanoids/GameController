@@ -75,16 +75,42 @@ public class KeyboardListener implements KeyEventDispatcher
             default:
                 if (Rules.league instanceof SPL) {
                     switch (key) {
-                        case KeyEvent.VK_B: event = ActionBoard.out[EventHandler.getInstance().data.team[0].teamColor == GameControlData.TEAM_BLUE ? 0 : 1]; break;
-                        case KeyEvent.VK_R: event = ActionBoard.out[EventHandler.getInstance().data.team[0].teamColor == GameControlData.TEAM_RED ? 0 : 1]; break;
+                        // TODO: This Key-Mappings do not work properly with 10 Colors
+                        case KeyEvent.VK_B:
+                            for (int i = 0; i < ActionBoard.out.length; ++i) {
+                                if (EventHandler.getInstance().data.team[i].teamColor == GameControlData.TEAM_BLUE) {
+                                    event = ActionBoard.out[i];
+                                }
+                            }
+                            break;
+                        case KeyEvent.VK_R:
+                            for (int i = 0; i < ActionBoard.out.length; ++i) {
+                                if (EventHandler.getInstance().data.team[i].teamColor == GameControlData.TEAM_RED) {
+                                    event = ActionBoard.out[i];
+                                }
+                            }
+                            break;
+                        case KeyEvent.VK_Y:
+                            for (int i = 0; i < ActionBoard.out.length; ++i) {
+                                if (EventHandler.getInstance().data.team[i].teamColor == GameControlData.TEAM_YELLOW) {
+                                    event = ActionBoard.out[i];
+                                }
+                            }
+                            break;
+                        case KeyEvent.VK_K:
+                            for (int i = 0; i < ActionBoard.out.length; ++i) {
+                                if (EventHandler.getInstance().data.team[i].teamColor == GameControlData.TEAM_BLACK) {
+                                    event = ActionBoard.out[i];
+                                }
+                            }
+                            break;
 
                         case KeyEvent.VK_P: event = ActionBoard.pushing; break;
                         case KeyEvent.VK_L: event = ActionBoard.leaving; break;
-                        case KeyEvent.VK_F: event = ActionBoard.fallen; break;
                         case KeyEvent.VK_I: event = ActionBoard.inactive; break;
                         case KeyEvent.VK_D: event = ActionBoard.defender; break;
-                        case KeyEvent.VK_O: event = ActionBoard.holding; break;
-                        case KeyEvent.VK_H: event = ActionBoard.hands; break;
+                        case KeyEvent.VK_G: event = ActionBoard.kickOffGoal; break;
+                        case KeyEvent.VK_O: event = ActionBoard.ballContact; break;
                         case KeyEvent.VK_U: event = ActionBoard.pickUp; break;
                         case KeyEvent.VK_C: event = ActionBoard.coachMotion; break;
                         case KeyEvent.VK_T: event = ActionBoard.teammatePushing; break;

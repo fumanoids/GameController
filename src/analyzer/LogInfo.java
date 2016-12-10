@@ -38,8 +38,10 @@ public class LogInfo
     public Rules league;
     /* If the teams have kept there team colors during the game. */
     public boolean keepColors = false;
-    /* The teams`s names. */
+    /* The teams's names. */
     public String[] team = new String[2];
+    /* The teams's jersey colors. */
+    public String[] color = new String[2];
     /* Time of the first ready. */
     public Date start;
     /* Duration of the game in seconds (first ready to last finish) */
@@ -104,7 +106,7 @@ public class LogInfo
      */
     private boolean isRealVersion()
     {
-        return version == null ? false : version.equals(controller.Main.version);
+        return version == null ? false : version.equals(controller.GameController.version);
     }
     
     /**

@@ -39,7 +39,7 @@ public class Set extends GCAction
         if (Rules.league.returnRobotsInGameStoppages) {
             data.resetPenaltyTimes();
         }
-        if (!data.playoff && data.timeBeforeCurrentGameState != 0) {
+        if ((data.gameType != GameControlData.GAME_PLAYOFF) && data.timeBeforeCurrentGameState != 0) {
             data.addTimeInCurrentState();
         }
         data.whenCurrentGameStateBegan = data.getTime();
@@ -47,7 +47,7 @@ public class Set extends GCAction
         if (data.secGameState == GameControlData.STATE2_PENALTYSHOOT) {
             data.timeBeforeCurrentGameState = 0;
             if (data.gameState != GameControlData.STATE_INITIAL) {
-                data.kickOffTeam = data.kickOffTeam == GameControlData.TEAM_BLUE ? GameControlData.TEAM_RED : GameControlData.TEAM_BLUE;
+                data.kickOffTeam = data.team[data.kickOffTeam == data.team[0].teamNumber ? 1 : 0].teamNumber;
                 FirstHalf.changeSide(data);
             }
 

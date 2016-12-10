@@ -37,6 +37,7 @@ public class PenaltyShoot extends GCAction
             // Don't set data.whenCurrentGameStateBegan, because it's used to count the pause
             data.gameState = GameControlData.STATE_INITIAL;
             data.timeBeforeCurrentGameState = 0;
+            data.kickOffReason = AdvancedData.KICKOFF_PENALTYSHOOT;
             data.resetPenalties();
             if (Rules.league.timeOutPerHalf) {
                 data.timeOutTaken = new boolean[] {false, false};
@@ -59,7 +60,7 @@ public class PenaltyShoot extends GCAction
           || ((data.firstHalf != GameControlData.C_TRUE)
             && (data.gameState == GameControlData.STATE_FINISHED)
             && !(Rules.league.overtime
-                && (data.playoff)
+                && (data.gameType == GameControlData.GAME_PLAYOFF)
                 && (data.secGameState == GameControlData.STATE2_NORMAL)
                 && (data.team[0].score == data.team[1].score)
                 && (data.team[0].score > 0)) )

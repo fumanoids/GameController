@@ -3,10 +3,9 @@ package data;
 import java.awt.Color;
 
 /**
+ * This class sets attributes given by the humanoid-league rules.
  *
  * @author Michel-Zen
- * 
- * This class sets attributes given by the humanoid-league rules.
  */
 public class HL extends Rules
 {
@@ -40,6 +39,8 @@ public class HL extends Rules
         kickoffTime = 10;
         /** Time in seconds before a global game stuck can be called. */
         minDurationBeforeStuck = 30;
+        /** The number of seconds switching to Playing is delayed. */
+        delayedSwitchToPlaying = 0;
         /** If there is an overtime before penalty-shoot in a play-off game. */
         overtime = true;
         /** Time in seconds one overtime half is long. */
@@ -61,7 +62,17 @@ public class HL extends Rules
         /** Number of penalty-shoots for each team after full 10minutes playing. */
         numberOfPenaltyShotsLong = 5;
         /** Time in seconds for each kind of penalty. */
-        penaltyTime = new int[] {-1, 30, 30, 30, 30, 30, 60 };
+        penaltyTime = new int[] {-1, 30, 30, 30, 30, 30, 60};
+        /** Time in seconds to increment penalties. */
+        penaltyIncreaseTime = 0;
+        /** Whether the penalty count is reset on halftime */
+        resetPenaltyCountOnHalftime = true;
+        /** Whether the ejected robots are reset on halftime */
+        resetEjectedRobotsOnHalftime = true;
+        /** Whether penalties can be removed before the penalty time has passed. */
+        allowEarlyPenaltyRemoval = true;
+        /** Penalty that players get when they substitute another player. */
+        substitutePenalty = PlayerInfo.PENALTY_NONE;
         /** if robots should return from penalties when the game state changes. */
         returnRobotsInGameStoppages = false;
         /** Time in seconds one team has as timeOut. */
@@ -72,13 +83,15 @@ public class HL extends Rules
         pushesToEjection = new int[] {};
         /** Defines if the option for a referee timeout is available */
         isRefereeTimeoutAvailable = false;
-        /** Defines if coach is available **/
+        /** Defines if coach is available */
         isCoachAvailable = false;
         /** Allowed to compensate for lost time? */
         lostTime = false;
-        /** Whether compatibility mode (version 7) is supported **/
+        /** Whether compatibility mode (version 7) is supported */
         compatibilityToVersion7 = true;
-        /** If true, the drop-in player competition is active*/
+        /** If true, the drop-in player competition is active */
         dropInPlayerMode = false;
+        /** If true, the game controller should drop broadcast-messages */
+        dropBroadcastMessages = false;
     }
 }

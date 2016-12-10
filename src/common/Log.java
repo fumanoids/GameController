@@ -1,11 +1,10 @@
 package common;
 
-import controller.EventHandler;
-import controller.Main;
 import data.AdvancedData;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -24,7 +23,7 @@ import java.util.LinkedList;
 public class Log
 {
     /** The instance of the singleton. */
-    private static Log instance = new Log();;
+    private static Log instance = new Log();
     
     /** The file to write into. */
     private FileWriter file;
@@ -60,7 +59,16 @@ public class Log
         } catch (IOException e) {
             error("cannot write to logfile "+path);
         }
-        toFile(Main.version);
+        
+        // Write version number if application is GameController
+        try {
+            toFile((String)Class.forName("controller.Main").getField("version").get(null));
+        } catch (ClassNotFoundException ex) {
+        } catch (NoSuchFieldException ex) {
+        } catch (SecurityException ex) {
+        } catch (IllegalArgumentException ex) {
+        } catch (IllegalAccessException ex) {
+        }
     }
     
     /**
@@ -72,7 +80,7 @@ public class Log
     public static void toFile(String s)
     {
         try{
-            instance.file.write(instance.timestampFormat.format(new Date(System.currentTimeMillis()))+": "+s+"\n");
+            instance.file.write(timestampFormat.format(new Date(System.currentTimeMillis()))+": "+s+"\n");
             instance.file.flush();
         } catch (IOException e) {
             error("cannot write to logfile!");
@@ -104,6 +112,9 @@ public class Log
     public static void state(AdvancedData data, String message)
     {
         AdvancedData state = (AdvancedData) data.clone();
+        if (!instance.states.isEmpty()) {
+          state.timeSinceCurrentGameStateBegan = state.getTime() - instance.states.getLast().whenCurrentGameStateBegan;
+        }
         if (instance.message == null) {
             state.message = message;
         } else {
@@ -121,31 +132,47 @@ public class Log
      * If a game state change is undone, the time when it was left is restored.
      * Thereby, there whole remaining log is moved into the new timeframe.
      * 
+     * @param data      The current data. Only used to determine whether 
+     *                  a change of game state is reverted.
      * @param states    How far you want to go back, how many states.
      * 
      * @return The message that was attached to the data you went back to.
      */
-    public static String goBack(int states)
+    public static String goBack(AdvancedData data, int states)
     {
         if (states >= instance.states.size()) {
             states = instance.states.size()-1;
         }
+        long timeSinceCurrentGameStateBegan = 0;
         
-        long laterTimestamp = instance.states.getLast().whenCurrentGameStateBegan;
-        long earlierTimestamp = 0;
-        long timeInCurrentState = instance.states.getLast().getTime() - laterTimestamp;
+        boolean gameStateChanged = false;
         for (int i=0; i<states; i++) {
-            earlierTimestamp = instance.states.getLast().whenCurrentGameStateBegan;
+            gameStateChanged |= instance.states.getLast().gameState != data.gameState;
+            timeSinceCurrentGameStateBegan = instance.states.getLast().timeSinceCurrentGameStateBegan;
             instance.states.removeLast();
         }
-        if (laterTimestamp != instance.states.getLast().whenCurrentGameStateBegan) {
-            long timeOffset = laterTimestamp - earlierTimestamp + timeInCurrentState;
-            for (AdvancedData data : instance.states) {
-                data.whenCurrentGameStateBegan += timeOffset;
+        gameStateChanged |= instance.states.getLast().gameState != data.gameState;
+        if (gameStateChanged) {
+            long timeOffset = data.getTime() - timeSinceCurrentGameStateBegan 
+                    - instance.states.getLast().whenCurrentGameStateBegan;
+            for (AdvancedData state : instance.states) {
+                state.whenCurrentGameStateBegan += timeOffset;
             }
         }
         AdvancedData state = (AdvancedData) instance.states.getLast().clone();
-        EventHandler.getInstance().data = state;
+        
+        // Write state to EventHandler if application is GameController
+        try {
+            final Class<?> eventHandlerClass = Class.forName("controller.EventHandler");
+            eventHandlerClass.getField("data").set(eventHandlerClass.getMethod("getInstance").invoke(null), state);
+        } catch (ClassNotFoundException ex) {
+        } catch (NoSuchFieldException ex) {
+        } catch (SecurityException ex) {
+        } catch (IllegalArgumentException ex) {
+        } catch (IllegalAccessException ex) {
+        } catch (NoSuchMethodException ex) {
+        } catch (InvocationTargetException ex) {
+        }
         return state.message;
     }
     
@@ -185,7 +212,7 @@ public class Log
             if (instance.errorFile == null) {
                 instance.errorFile = new FileWriter(new File(instance.errorPath));
             }
-            instance.errorFile.write(instance.timestampFormat.format(new Date(System.currentTimeMillis()))+": "+s+"\n");
+            instance.errorFile.write(timestampFormat.format(new Date(System.currentTimeMillis()))+": "+s+"\n");
             instance.errorFile.flush();
         } catch (IOException e) {
              System.err.println("cannot write to error file!");
