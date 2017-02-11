@@ -25,6 +25,7 @@ public class Defender extends Penalty
     public void performOn(AdvancedData data, PlayerInfo player, int side, int number)
     {
         player.penalty = PlayerInfo.PENALTY_SPL_ILLEGAL_DEFENDER;
+        handleRepeatedPenalty(data, player, side, number, AdvancedData.STATE_PLAYING);
         data.whenPenalized[side][number] = data.getTime();
         Log.state(data, "Illegal Defender "+
                 Rules.league.teamColorName[data.team[side].teamColor]

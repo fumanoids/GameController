@@ -2,12 +2,11 @@ package analyzer;
 
 import common.Log;
 import common.TotalScaleLayout;
+
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -15,6 +14,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -37,9 +37,10 @@ import javax.swing.event.ListSelectionListener;
  * 
  * This window is shown to select log-files for analyzing.
  */
-@SuppressWarnings("unchecked")
 public class GUI extends JFrame implements ListSelectionListener
 {
+    private static final long serialVersionUID = 5985717021939316295L;
+
     /* Some attributes for the layout and appearance, feel free to change
      * them and look what happens. */
     private final static String TITLE = "Log Analyzer";
@@ -56,8 +57,8 @@ public class GUI extends JFrame implements ListSelectionListener
     public final static String HTML_END = "</font>";
     
     /* This gui´s components. */
-    private DefaultListModel list;
-    private JList listDisplay;
+    private DefaultListModel<CheckListItem> list;
+    private JList<CheckListItem> listDisplay;
     private ListSelectionModel selection;
     private JScrollPane scrollArea;
     private JLabel info;
@@ -79,8 +80,8 @@ public class GUI extends JFrame implements ListSelectionListener
         TotalScaleLayout layout = new TotalScaleLayout(this);
         setLayout(layout);
         
-        list = new DefaultListModel();
-        listDisplay = new JList(list);
+        list = new DefaultListModel<CheckListItem>();
+        listDisplay = new JList<CheckListItem>(list);
         listDisplay.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         listDisplay.setCellRenderer(new CheckListRenderer());
         listDisplay.addMouseListener(new MouseAdapter()
@@ -91,7 +92,8 @@ public class GUI extends JFrame implements ListSelectionListener
                         if (event.getPoint().x > CHECKBOX_WIDTH) {
                             return;
                         }
-                        JList list = (JList) event.getSource();
+                        @SuppressWarnings("unchecked")
+                        JList<CheckListItem> list = (JList<CheckListItem>) event.getSource();
                         int index = list.locationToIndex(event.getPoint());
                         CheckListItem item = (CheckListItem)list.getModel().getElementAt(index);
                         item.selected = !item.selected;
@@ -145,7 +147,7 @@ public class GUI extends JFrame implements ListSelectionListener
     {
         selection.clearSelection();
         list.removeAllElements();
-        for (LogInfo log : Main.logs) {
+        for (LogInfo log : LogAnalyzer.logs) {
             list.addElement(new CheckListItem(log+"", log.isRealLog()));
         }
     }
@@ -156,17 +158,17 @@ public class GUI extends JFrame implements ListSelectionListener
      */
     private void clean()
     {
-        File droppedDir = new File(Main.PATH_DROPPED);
+        File droppedDir = new File(LogAnalyzer.PATH_DROPPED);
         if (!droppedDir.isDirectory()) {
             droppedDir.mkdir();
         }
         int i = 0;
-        for (LogInfo log : Main.logs) {
+        for (LogInfo log : LogAnalyzer.logs) {
             if (!((CheckListItem)list.getElementAt(i++)).selected) {
-                log.file.renameTo(new File(Main.PATH_DROPPED+"/"+log.file.getName()));
+                log.file.renameTo(new File(LogAnalyzer.PATH_DROPPED+"/"+log.file.getName()));
             }
         }
-        Main.load();
+        LogAnalyzer.load();
         updateList();
     }
     
@@ -180,26 +182,26 @@ public class GUI extends JFrame implements ListSelectionListener
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
-        Main.stats = fc.getSelectedFile();
+        LogAnalyzer.stats = fc.getSelectedFile();
         try {
-            Main.stats.createNewFile();
-            Main.writer = new FileWriter(Main.stats);
-            Main.writer.write("datetime,action,team,player,blue,red\n");
+            LogAnalyzer.stats.createNewFile();
+            LogAnalyzer.writer = new FileWriter(LogAnalyzer.stats);
+            LogAnalyzer.writer.write("datetime,action,team,player,blue,red\n");
         } catch (IOException e) {
-            Log.error("Cannot create and open/write to file "+Main.stats);
+            Log.error("Cannot create and open/write to file "+LogAnalyzer.stats);
             return;
         }
         int i = 0;
-        for (LogInfo log : Main.logs) {
+        for (LogInfo log : LogAnalyzer.logs) {
             if (((CheckListItem)list.getElementAt(i++)).selected) {
                 Parser.statistic(log);
             }
         }
         try{
-            Main.writer.flush();
-            Main.writer.close();
+            LogAnalyzer.writer.flush();
+            LogAnalyzer.writer.close();
         } catch (IOException e) {
-            Log.error("cannot close file "+Main.stats);
+            Log.error("cannot close file "+LogAnalyzer.stats);
         }
         JOptionPane.showMessageDialog(null, "Done");
     }
@@ -209,7 +211,7 @@ public class GUI extends JFrame implements ListSelectionListener
     {
         int i = selection.getMinSelectionIndex();
         if (i >= 0) {
-            info.setText(Main.logs.get(i).getInfo());
+            info.setText(LogAnalyzer.logs.get(i).getInfo());
         } else {
             info.setText("");
         }
@@ -243,10 +245,12 @@ public class GUI extends JFrame implements ListSelectionListener
     /**
      * This class is used to render a list item with checkbox.
      */
-    class CheckListRenderer extends JCheckBox implements ListCellRenderer
+    class CheckListRenderer extends JCheckBox implements ListCellRenderer<CheckListItem>
     {
+        private static final long serialVersionUID = -1383214899066408500L;
+
         @Override
-        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean hasFocus)
+        public Component getListCellRendererComponent(JList<? extends CheckListItem> list, CheckListItem value, int index, boolean isSelected, boolean hasFocus)
         {
             setEnabled(list.isEnabled());
             setSelected(((CheckListItem)value).selected);

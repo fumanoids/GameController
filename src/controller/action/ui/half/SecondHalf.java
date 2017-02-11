@@ -5,6 +5,7 @@ import controller.action.ActionType;
 import controller.action.GCAction;
 import data.AdvancedData;
 import data.GameControlData;
+import data.Rules;
 
 
 /**
@@ -34,12 +35,9 @@ public class SecondHalf extends GCAction
         if (data.firstHalf != GameControlData.C_FALSE || data.secGameState == GameControlData.STATE2_PENALTYSHOOT) {
             data.firstHalf = GameControlData.C_FALSE;
             data.secGameState = GameControlData.STATE2_NORMAL;
-            if (data.colorChangeAuto) {
-                data.team[0].teamColor = GameControlData.TEAM_BLUE;
-                data.team[1].teamColor = GameControlData.TEAM_RED;
-            }
             FirstHalf.changeSide(data);
-            data.kickOffTeam = (data.leftSideKickoff ? data.team[0].teamColor : data.team[1].teamColor);
+            data.kickOffTeam = (data.leftSideKickoff ? data.team[0].teamNumber : data.team[1].teamNumber);
+            data.kickOffReason = AdvancedData.KICKOFF_HALF;
             data.gameState = GameControlData.STATE_INITIAL;
             // Don't set data.whenCurrentGameStateBegan, because it's used to count the pause
             Log.state(data, "2nd Half");
@@ -55,10 +53,11 @@ public class SecondHalf extends GCAction
     @Override
     public boolean isLegal(AdvancedData data)
     {
-        return ((data.firstHalf != GameControlData.C_TRUE)
-              && (data.secGameState == GameControlData.STATE2_NORMAL))
-            || ((data.secGameState == GameControlData.STATE2_NORMAL)
-              && (data.gameState == GameControlData.STATE_FINISHED))
-            || (data.testmode);
+        return (!Rules.league.dropInPlayerMode
+                && (((data.firstHalf != GameControlData.C_TRUE)
+                        && (data.secGameState == GameControlData.STATE2_NORMAL))
+                   || ((data.secGameState == GameControlData.STATE2_NORMAL)
+                        && (data.gameState == GameControlData.STATE_FINISHED))))
+                || data.testmode;
     }
 }

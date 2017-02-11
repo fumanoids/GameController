@@ -12,8 +12,6 @@ import common.Log;
 import controller.action.ActionBoard;
 
 /**
- * @author Michel Bartsch
- *
  * This class extends the GameControlData that is send to the robots. It
  * contains all the additional informations the GameControler needs to
  * represent a state of the game, for example time in millis.
@@ -21,9 +19,14 @@ import controller.action.ActionBoard;
  * There are no synchronized get and set methods because in this architecture
  * only actions in their perform method are allowed to write into this and they
  * are all in the same thread. Look in the EventHandler for more information.
+ * 
+ * @author Michel Bartsch
+ * @author Dennis Schürholz (bhuman@dennisschuerholz.de)
  */
 public class AdvancedData extends GameControlData implements Cloneable
 {
+    private static final long serialVersionUID = 2720243434306304319L;
+
     /** This message is set when the data is put into the timeline */
     public String message = "";
 
@@ -33,11 +36,20 @@ public class AdvancedData extends GameControlData implements Cloneable
     /** When was switched to the current state? (ms) */
     public long whenCurrentGameStateBegan;
     
+    /** How long ago started the current game state? (ms) Only set when written to log! */
+    public long timeSinceCurrentGameStateBegan;
+
     /** When was the last drop-in? (ms, 0 = never) */
     public long whenDropIn;
     
     /** When was each player penalized last (ms, 0 = never)? */
     public long[][] whenPenalized = Rules.league.isCoachAvailable ? new long[2][Rules.league.teamSize+1] : new long[2][Rules.league.teamSize];
+
+    /** How often was each team penalized? */
+    public int[] penaltyCount = new int[2];
+
+    /** How often was each team penalized at before the robot got penalized? */
+    public int[][] robotPenaltyCount = new int[2][Rules.league.teamSize];
 
     /** Which players were already ejected? */
     public boolean [][] ejected = Rules.league.isCoachAvailable ? new boolean[2][Rules.league.teamSize+1] : new boolean[2][Rules.league.teamSize];
@@ -56,9 +68,6 @@ public class AdvancedData extends GameControlData implements Cloneable
     
     /** If true, left side has the kickoff. */
     public boolean leftSideKickoff = true;
-    
-    /** If true, the game auto-pauses the game for full 10minutes playing. */
-    public boolean playoff;
     
     /** If true, the colors change automatically. */
     public boolean colorChangeAuto;
@@ -83,6 +92,13 @@ public class AdvancedData extends GameControlData implements Cloneable
 
     /** Used to backup the secondary game state during a timeout. */
     public byte previousSecGameState = STATE2_NORMAL;
+
+    public static final byte KICKOFF_HALF = 0;
+    public static final byte KICKOFF_TIMEOUT = 1;
+    public static final byte KICKOFF_GAMESTUCK = 2;
+    public static final byte KICKOFF_PENALTYSHOOT = 3;
+    public static final byte KICKOFF_GOAL = 4;
+    public byte kickOffReason = KICKOFF_HALF;
 
     /** Keeps the penalties for the players if there are substituted */
     public ArrayList<ArrayList<PenaltyQueueData>> penaltyQueueForSubPlayers = new ArrayList<ArrayList<PenaltyQueueData>>();
@@ -179,7 +195,7 @@ public class AdvancedData extends GameControlData implements Cloneable
      */
     public void updateTimes()
     {
-        secsRemaining = (short) getRemainingGameTime();
+        secsRemaining = (short) getRemainingGameTime(false);
         dropInTime = whenDropIn == 0 ? -1 : (short) getSecondsSince(whenDropIn);
         Integer subT = getSecondaryTime(0);
 
@@ -209,11 +225,13 @@ public class AdvancedData extends GameControlData implements Cloneable
     /**
      * Calculates the remaining game time in the current phase of the game.
      * This is what the primary clock will show.
+     * @param real If true, the real time will be returned. If false, the first number of seconds in the playing state
+     *             in play-off games will not be updated.
      * @return The remaining number of seconds.
      */
-    public int getRemainingGameTime()
+    public int getRemainingGameTime(boolean real)
     {
-        int regularNumberOfPenaltyShots = playoff ? Rules.league.numberOfPenaltyShotsLong : Rules.league.numberOfPenaltyShotsShort;
+        int regularNumberOfPenaltyShots = (gameType == GAME_PLAYOFF) ? Rules.league.numberOfPenaltyShotsLong : Rules.league.numberOfPenaltyShotsShort;
         int duration = secGameState == STATE2_TIMEOUT ? secsRemaining : 
                 secGameState == STATE2_NORMAL ? Rules.league.halfTime
                 : secGameState == STATE2_OVERTIME ? Rules.league.overtimeTime
@@ -222,11 +240,13 @@ public class AdvancedData extends GameControlData implements Cloneable
                 : Rules.league.penaltyShotTime;
         int timePlayed = gameState == STATE_INITIAL// during timeouts
                 || (gameState == STATE_READY || gameState == STATE_SET)
-                && (playoff && Rules.league.playOffTimeStop || timeBeforeCurrentGameState == 0)
+                && ((gameType == GAME_PLAYOFF) && Rules.league.playOffTimeStop || timeBeforeCurrentGameState == 0)
                 || gameState == STATE_FINISHED
-        ? (int) ((timeBeforeCurrentGameState + manRemainingGameTimeOffset + (manPlay ? System.currentTimeMillis() - manWhenClockChanged : 0)) / 1000)
-                : getSecondsSince(whenCurrentGameStateBegan - timeBeforeCurrentGameState - manRemainingGameTimeOffset);
-        
+                ? (int) ((timeBeforeCurrentGameState + manRemainingGameTimeOffset + (manPlay ? System.currentTimeMillis() - manWhenClockChanged : 0)) / 1000)
+                : real || (gameType != GAME_PLAYOFF && timeBeforeCurrentGameState > 0) || secGameState != STATE2_NORMAL || gameState != STATE_PLAYING
+                || getSecondsSince(whenCurrentGameStateBegan) >= Rules.league.delayedSwitchToPlaying 
+                ? getSecondsSince(whenCurrentGameStateBegan - timeBeforeCurrentGameState - manRemainingGameTimeOffset)
+                : (int) ((timeBeforeCurrentGameState - manRemainingGameTimeOffset) / 1000);
         return duration - timePlayed;
     }
     
@@ -236,11 +256,13 @@ public class AdvancedData extends GameControlData implements Cloneable
      */
     public Integer getRemainingPauseTime()
     {
-        if (secGameState == GameControlData.STATE2_NORMAL
+        if (Rules.league.dropInPlayerMode) {
+            return null;
+        } else if (secGameState == GameControlData.STATE2_NORMAL
                 && (gameState == STATE_INITIAL && firstHalf != C_TRUE && !timeOutActive[0] && !timeOutActive[1]
                 || gameState == STATE_FINISHED && firstHalf == C_TRUE)) {
             return getRemainingSeconds(whenCurrentGameStateBegan, Rules.league.pauseTime);
-        } else if (Rules.league.pausePenaltyShootOutTime != 0 && playoff && team[0].score == team[1].score
+        } else if (Rules.league.pausePenaltyShootOutTime != 0 && (gameType == GAME_PLAYOFF) && team[0].score == team[1].score
                 && (gameState == STATE_INITIAL && secGameState == STATE2_PENALTYSHOOT && !timeOutActive[0] && !timeOutActive[1]
                 || gameState == STATE_FINISHED && firstHalf != C_TRUE)) {
             return getRemainingSeconds(whenCurrentGameStateBegan, Rules.league.pausePenaltyShootOutTime);
@@ -272,8 +294,16 @@ public class AdvancedData extends GameControlData implements Cloneable
             for (int j = 0; j < Rules.league.teamSize; j++) {
                 if (!ActionBoard.robot[i][j].isCoach(this) && team[i].player[j].penalty != PlayerInfo.PENALTY_SUBSTITUTE) {
                     team[i].player[j].penalty = PlayerInfo.PENALTY_NONE;
-                    ejected[i][j] = false;
+                    if (Rules.league.resetEjectedRobotsOnHalftime) {
+                        ejected[i][j] = false;
+                    }
                 }
+                if (Rules.league.resetPenaltyCountOnHalftime) {
+                    robotPenaltyCount[i][j] = 0;
+                }
+            }
+            if (Rules.league.resetPenaltyCountOnHalftime) {
+                penaltyCount[i] = 0;
             }
         }
         resetPenaltyTimes();
@@ -291,11 +321,15 @@ public class AdvancedData extends GameControlData implements Cloneable
     public int getRemainingPenaltyTime(int side, int number)
     {
         int penalty = team[side].player[number].penalty;
-        assert penalty == PlayerInfo.PENALTY_MANUAL || penalty == PlayerInfo.PENALTY_SUBSTITUTE || Rules.league.penaltyTime[penalty] != -1;
+        int penaltyTime = -1;
+        if (penalty != PlayerInfo.PENALTY_MANUAL && penalty != PlayerInfo.PENALTY_SUBSTITUTE) {
+            penaltyTime = Rules.league.penaltyTime[penalty] + Rules.league.penaltyIncreaseTime * robotPenaltyCount[side][number];
+        }
+        assert penalty == PlayerInfo.PENALTY_MANUAL || penalty == PlayerInfo.PENALTY_SUBSTITUTE || penaltyTime != -1;
         return penalty == PlayerInfo.PENALTY_MANUAL || penalty == PlayerInfo.PENALTY_SUBSTITUTE ? 0
                 : gameState == STATE_READY && Rules.league.returnRobotsInGameStoppages && whenPenalized[side][number] >= whenCurrentGameStateBegan
                 ? Rules.league.readyTime - getSecondsSince(whenCurrentGameStateBegan)
-                : Math.max(0, getRemainingSeconds(whenPenalized[side][number], Rules.league.penaltyTime[penalty]));
+                : Math.max(0, getRemainingSeconds(whenPenalized[side][number], penaltyTime));
     }
     
     /**
@@ -324,6 +358,11 @@ public class AdvancedData extends GameControlData implements Cloneable
      */
     public Integer getSecondaryTime(int timeKickOffBlockedOvertime)
     {
+        if(timeKickOffBlockedOvertime == 0 // preparing data packet
+                && secGameState == STATE2_NORMAL && gameState == STATE_PLAYING
+                && getSecondsSince(whenCurrentGameStateBegan) < Rules.league.delayedSwitchToPlaying) {
+            return null;
+        }
         int timeKickOffBlocked = getRemainingSeconds(whenCurrentGameStateBegan, Rules.league.kickoffTime);
         if (kickOffTeam == DROPBALL) {
             timeKickOffBlocked = 0;
@@ -371,6 +410,7 @@ public class AdvancedData extends GameControlData implements Cloneable
                             message[k++] = 0;
                         }
                         
+                        team[j].coachSequence = splCoachMessageQueue.get(i).sequence;
                         team[j].coachMessage = message;
                         Log.toFile("Coach Message Team "+  Rules.league.teamColorName[team[j].teamColor]+" "+ new String(message));
                         splCoachMessageQueue.remove(i);
@@ -382,19 +422,36 @@ public class AdvancedData extends GameControlData implements Cloneable
             }
         }
     }
-
-    public class PenaltyQueueData  implements Serializable {
-        public long whenPenalized;
-        public byte penalty;
-
-        public PenaltyQueueData(long whenPenalized, byte penalty) {
-            this.whenPenalized = whenPenalized;
-            this.penalty = penalty;
+    
+    public void updatePenalties() {
+        if (secGameState == STATE2_NORMAL && gameState == STATE_PLAYING
+                && getSecondsSince(whenCurrentGameStateBegan) >= Rules.league.delayedSwitchToPlaying) {
+            for (TeamInfo t : team) {
+                for (PlayerInfo p : t.player) {
+                    if (p.penalty == PlayerInfo.PENALTY_SPL_ILLEGAL_MOTION_IN_SET) {
+                        p.penalty = PlayerInfo.PENALTY_NONE;
+                    }
+                }
+            }
         }
     }
 
-    public void addToPenaltyQueue(int side, long whenPenalized, byte penalty) {
-        penaltyQueueForSubPlayers.get(side).add(new PenaltyQueueData(whenPenalized, penalty));
+    public class PenaltyQueueData  implements Serializable {
+        private static final long serialVersionUID = 7536004813202642582L;
+
+        public long whenPenalized;
+        public byte penalty;
+        public int penaltyCount;
+
+        public PenaltyQueueData(long whenPenalized, byte penalty, int penaltyCount) {
+            this.whenPenalized = whenPenalized;
+            this.penalty = penalty;
+            this.penaltyCount = penaltyCount;
+        }
+    }
+
+    public void addToPenaltyQueue(int side, long whenPenalized, byte penalty, int penaltyCount) {
+        penaltyQueueForSubPlayers.get(side).add(new PenaltyQueueData(whenPenalized, penalty, penaltyCount));
     }
 
 }

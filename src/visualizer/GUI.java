@@ -15,11 +15,14 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
 import common.Log;
+import data.AdvancedData;
 import data.GameControlData;
 import data.Rules;
 import data.SPL;
@@ -32,13 +35,18 @@ import data.Teams;
  */
 public class GUI extends JFrame
 {
+    private static final long serialVersionUID = -3694754414830065322L;
+
     /**
      * Some constants defining this GUI`s appearance as their names say.
      * Feel free to change them and see what happens.
      */
     private static final boolean IS_OSX = System.getProperty("os.name").contains("OS X");
     private static final boolean IS_APPLE_JAVA = IS_OSX && System.getProperty("java.version").compareTo("1.7") < 0;
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").contains("Windows");
     private static final String WINDOW_TITLE = "Visualizer";
+    private static final int WINDOW_WIDTH = 1024;
+    private static final int WINDOW_HEIGHT = 768;
     private static final int DISPLAY_UPDATE_DELAY = 500;
     private static final String STANDARD_FONT = Font.DIALOG;
     private static final double STANDARD_FONT_SIZE = 0.08;
@@ -52,6 +60,8 @@ public class GUI extends JFrame
 
     /** Available screens. */
     private static final GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+    private static final GraphicsDevice device = devices[devices[0].equals(
+            GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()) ? devices.length - 1 : 0];
 
     BufferStrategy bufferStrategy;
     /** If testmode is on to just display whole GameControlData. */
@@ -74,30 +84,32 @@ public class GUI extends JFrame
     /**
      * Creates a new GUI.
      */
-    GUI()
+    GUI(final boolean fullscreen)
     {
-        super(WINDOW_TITLE, devices[IS_OSX && !IS_APPLE_JAVA ? 0 : devices.length - 1].getDefaultConfiguration());
-        
-        setUndecorated(true);
-        if (IS_APPLE_JAVA && devices.length != 1) {
-            setSize(devices[devices.length-1].getDefaultConfiguration().getBounds().getSize());
-        } else {
-            devices[IS_OSX && !IS_APPLE_JAVA ? 0 : devices.length-1].setFullScreenWindow(this);
+        super(WINDOW_TITLE, device.getDefaultConfiguration());
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        //fullscreen
+        if (fullscreen) {
+            setUndecorated(true);
+            if ((IS_APPLE_JAVA || IS_WINDOWS) && devices.length != 1) {
+                setSize(device.getDefaultConfiguration().getBounds().getSize());
+            } else {
+                device.setFullScreenWindow(this);
+            }
         }
-
-        loadBackground();
-
+        
         testFont = new Font(TEST_FONT, Font.PLAIN, (int)(TEST_FONT_SIZE*getWidth()));
         standardFont = new Font(STANDARD_FONT, Font.PLAIN, (int)(STANDARD_FONT_SIZE*getWidth()));
         standardSmallFont = new Font(STANDARD_FONT, Font.PLAIN, (int)(STANDARD_FONT_S_SIZE*getWidth()));
         scoreFont = new Font(STANDARD_FONT, Font.PLAIN, (int)(STANDARD_FONT_XXL_SIZE*getWidth()));
-        coachMessageFont = new Font(Font.DIALOG, Font.PLAIN, (int)(0.037*getWidth()));
+        coachMessageFont = new Font(Font.DIALOG, Font.PLAIN, (int)(0.033*getWidth()));
         
         addWindowListener(new WindowAdapter()
         {
             @Override
             public void windowClosing(WindowEvent e) {
-                Main.exit();
+                GameStateVisualizer.exit();
             }
         });
         
@@ -141,6 +153,19 @@ public class GUI extends JFrame
     public synchronized void update(GameControlData data)
     {
         this.data = data;
+        
+        // Automatically switch between SPL regular soccer and drop-in competitions
+        if (data != null && (data.gameType == GameControlData.GAME_DROPIN) != Rules.league.dropInPlayerMode) {
+            for (Rules league : Rules.LEAGUES) {
+                if (league != Rules.league && league instanceof SPL) {
+                    Rules.league = league;
+                    break;
+                }
+            }
+            Teams.readTeams();
+            loadBackground();
+        }
+        
         do {
             do {
                 Graphics g = bufferStrategy.getDrawGraphics();
@@ -282,8 +307,9 @@ public class GUI extends JFrame
         int size = getSizeToWidth(0.12);
         g.setColor(Color.BLACK);
         drawCenteredString(g, ":", getWidth()/2-size, yDiv, 2*size);
-        for (int i=0; i<2; i++) {
-            g.setColor(Rules.league.teamColor[data.team[i].teamColor]);
+        for (int i = 0; i < 2; i++) {
+            g.setColor(Rules.league.teamColor[data.team[i].teamColor == AdvancedData.TEAM_WHITE
+                    ? AdvancedData.TEAM_BLACK : data.team[i].teamColor]);
             drawCenteredString(
                     g,
                     data.team[i].score+"",
@@ -324,7 +350,9 @@ public class GUI extends JFrame
         
         switch (data.secGameState) {
             case GameControlData.STATE2_NORMAL:
-                if (data.firstHalf == GameControlData.C_TRUE) {
+                if (Rules.league.dropInPlayerMode) {
+                    state = "";
+                } else if (data.firstHalf == GameControlData.C_TRUE) {
                     if (data.gameState == GameControlData.STATE_FINISHED) {
                         state = "Half Time";
                     } else {
@@ -473,39 +501,44 @@ public class GUI extends JFrame
             }
 
             g2.setFont(standardSmallFont);
-            int maxWidth = (getSizeToWidth(0.99) - getSizeToWidth(0.01) - g2.getFontMetrics().stringWidth("00::00")) / 2;
+            int maxWidth = (getSizeToWidth(0.99) - getSizeToWidth(0.01) - g2.getFontMetrics().stringWidth("Second Half")) / 2;
 
             g2.setFont(coachMessageFont);
-            int split = -1;
-            int j;
-            for (j = 0; j < coachMessage.length() &&
-                  g2.getFontMetrics().stringWidth(coachMessage.substring(0, j + 1)) <= maxWidth; ++j) {
-                if (!Character.isLetter(coachMessage.charAt(j))
-                        || j < coachMessage.length() - 1
-                        && Character.isLowerCase(coachMessage.charAt(j))
-                        && Character.isUpperCase(coachMessage.charAt(j + 1))) {
-                    split = j;
+            
+            ArrayList<String> rows = new ArrayList<String>();
+            while (true) {
+                int split = -1;
+                int j;
+                for (j = 0; j < coachMessage.length() &&
+                      g2.getFontMetrics().stringWidth(coachMessage.substring(0, j + 1)) <= maxWidth; ++j) {
+                    if (!Character.isLetter(coachMessage.charAt(j))
+                            || j < coachMessage.length() - 1
+                            && Character.isLowerCase(coachMessage.charAt(j))
+                            && Character.isUpperCase(coachMessage.charAt(j + 1))) {
+                        split = j;
+                    }
+                }
+                if (j < coachMessage.length()) {
+                    rows.add(coachMessage.substring(0, split + 1).trim());
+                    coachMessage = coachMessage.substring(split + 1).trim();
+                } else {
+                    break;
                 }
             }
-
-            String row1;
-            String row2;
-            if (j == coachMessage.length()) {
-                row1 = "";
-                row2 = coachMessage;
-            } else {
-                row1 = coachMessage.substring(0, split + 1).trim();
-                row2 = coachMessage.substring(split + 1).trim();
+            if (coachMessage.length() > 0) {
+                rows.add(coachMessage);
             }
 
             //Draw the coach label and coach message box
             g2.setColor(Rules.league.teamColor[data.team[i].teamColor]);
             if (i == 1) {
-                g2.drawString(row1, getSizeToWidth(0.01), getSizeToHeight(0.92));
-                g2.drawString(row2, getSizeToWidth(0.01), getSizeToHeight(0.98));
+                for (int j = rows.size() - 1; j >= 0; --j) {
+                  g2.drawString(rows.get(j), getSizeToWidth(0.01), getSizeToHeight(0.98 - (rows.size() - 1 - j) * 0.05));
+                }
             } else {
-                g2.drawString(row1, getSizeToWidth(0.99) - g2.getFontMetrics().stringWidth(row1), getSizeToHeight(0.92));
-                g2.drawString(row2, getSizeToWidth(0.99) - g2.getFontMetrics().stringWidth(row2), getSizeToHeight(0.98));
+                for (int j = rows.size() - 1; j >= 0; --j) {
+                    g2.drawString(rows.get(j), getSizeToWidth(0.99) - g2.getFontMetrics().stringWidth(rows.get(j)), getSizeToHeight(0.98 - (rows.size() - 1 - j) * 0.05));
+                }
             }
         }
     }

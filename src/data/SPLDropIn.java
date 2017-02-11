@@ -1,12 +1,9 @@
 package data;
 
-import java.awt.Color;
-
 /**
+ * This class sets attributes given by the spl rules, adapted for the drop-in competition.
  *
  * @author Michel-Zen
- * 
- * This class sets attributes given by the spl rules, adapted for the drop-in competition.
  */
 public class SPLDropIn extends SPL
 {
@@ -18,9 +15,13 @@ public class SPLDropIn extends SPL
         leagueDirectory = "spl_dropin";
         /** How many robots are in a team. */
         teamSize = robotsPlaying;
-        /** Defines if coach is available **/
+        /** Time in seconds to increment penalties. */
+        penaltyIncreaseTime = 0;
+        /** The number of seconds switching to Playing is delayed. */
+        delayedSwitchToPlaying = 0;
+        /** Defines if coach is available */
         isCoachAvailable = false;
-        /** If true, the drop-in player competition is active*/
+        /** If true, the drop-in player competition is active */
         dropInPlayerMode = true;
         /** On how many pushings is a robot ejected. */
         pushesToEjection = new int[] {};

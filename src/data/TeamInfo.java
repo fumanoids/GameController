@@ -6,14 +6,16 @@ import java.nio.ByteOrder;
 
 
 /**
- * @author Michel Bartsch
- * 
  * This class is part of the data wich are send to the robots.
  * It just represents this data, reads and writes between C-structure and
  * Java, nothing more.
+ * 
+ * @author Michel Bartsch
  */
 public class TeamInfo implements Serializable
 {
+    private static final long serialVersionUID = 2795660408542807763L;
+
     /**
      * How many players a team may have.
      * Actually that many players in each team need to be sent, even if
@@ -28,6 +30,7 @@ public class TeamInfo implements Serializable
             1 + // score
             1 + // penaltyShot
             2 + // singleShots
+            1 + // coach's sequence number
             SPLCoachMessage.SPL_COACH_MESSAGE_SIZE + // coach's message
             (MAX_NUM_PLAYERS + 1) * PlayerInfo.SIZE; // +1 for the coach
 
@@ -45,6 +48,7 @@ public class TeamInfo implements Serializable
     public byte score;                                              // team's score
     public byte penaltyShot = 0;                                    // penalty shot counter
     public short singleShots = 0;                                   // bits represent penalty shot success
+    public byte coachSequence;                                      // sequence number of the last coach message
     public byte[] coachMessage = new byte[SPLCoachMessage.SPL_COACH_MESSAGE_SIZE];
     public PlayerInfo coach = new PlayerInfo();
     public PlayerInfo[] player = new PlayerInfo[MAX_NUM_PLAYERS];   // the team's players
@@ -72,6 +76,7 @@ public class TeamInfo implements Serializable
         buffer.put(score);
         buffer.put(penaltyShot);
         buffer.putShort(singleShots);
+        buffer.put(coachSequence);
         buffer.put(coachMessage);
         buffer.put(coach.toByteArray());
         for (int i=0; i<MAX_NUM_PLAYERS; i++) {
@@ -114,6 +119,7 @@ public class TeamInfo implements Serializable
         score = buffer.get();
         penaltyShot = buffer.get();
         singleShots = buffer.getShort();
+        coachSequence = buffer.get();
         buffer.get(coachMessage);
         coach.fromByteArray(buffer);
         for (int i=0; i<player.length; i++) {
@@ -131,12 +137,21 @@ public class TeamInfo implements Serializable
         switch (teamColor) {
             case GameControlData.TEAM_BLUE: temp = "blue"; break;
             case GameControlData.TEAM_RED:  temp = "red";  break;
+            case GameControlData.TEAM_YELLOW: temp = "yellow"; break;
+            case GameControlData.TEAM_BLACK:  temp = "black";  break;
+            case GameControlData.TEAM_WHITE:  temp = "white";  break;
+            case GameControlData.TEAM_GREEN:  temp = "green";  break;
+            case GameControlData.TEAM_ORANGE:  temp = "orange";  break;
+            case GameControlData.TEAM_PURPLE:  temp = "purple";  break;
+            case GameControlData.TEAM_BROWN:  temp = "brown";  break;
+            case GameControlData.TEAM_GRAY:  temp = "gray";  break;
             default: temp = "undefinied("+teamColor+")";
         }
         out += "          teamColor: "+temp+"\n";
         out += "              score: "+score+"\n";
         out += "        penaltyShot: "+penaltyShot+"\n";
         out += "        singleShots: "+Integer.toBinaryString(singleShots)+"\n";
+        out += "      coachSequence: "+coachSequence+"\n";
         out += "       coachMessage: "+new String(coachMessage)+"\n";
         out += "        coachStatus: "+coach.toString()+"\n";
         return out;

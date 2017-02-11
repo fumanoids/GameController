@@ -1,0 +1,49 @@
+<Simulation>
+
+  <Include href="NaoV4H21.rsi2"/>
+  <Include href="Ball2010SPL.rsi2"/>
+  <Include href="Field2015SPL.rsi2"/>
+
+  <Scene>
+    <Body ref="Nao" name="robotBlue" />
+    <Body ref="Nao" name="robotRed">
+      <Set name="NaoColor" value="red"/>
+    </Body>
+    <Body ref="Nao" name="robotBlack">
+      <Set name="NaoColor" value="black"/>
+    </Body>
+    <Body ref="Nao" name="robotYellow">
+      <Set name="NaoColor" value="yellow"/>
+    </Body>
+    <Body ref="Nao" name="robotWhite">
+      <Set name="NaoColor" value="white"/>
+    </Body>
+    <Body ref="Nao" name="robotGreen">
+      <Set name="NaoColor" value="green"/>
+    </Body>
+    <Body ref="Nao" name="robotOrange">
+      <Set name="NaoColor" value="orange"/>
+    </Body>
+    <Body ref="Nao" name="robotPurple">
+      <Set name="NaoColor" value="purple"/>
+    </Body>
+    <Body ref="Nao" name="robotBrown">
+      <Set name="NaoColor" value="brown"/>
+    </Body>
+    <Body ref="Nao" name="robotGray">
+      <Set name="NaoColor" value="gray"/>
+    </Body>
+
+    <Body name="ball" ref="ball">
+      <Translation z="0.0325m" />
+    </Body>
+
+    <Compound name="field">
+      <Compound ref="field" />
+    </Compound>
+	
+    <Compound name="fieldSmall">
+      <Compound ref="fieldSmall" />
+    </Compound>
+  </Scene>
+</Simulation>

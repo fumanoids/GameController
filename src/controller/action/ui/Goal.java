@@ -7,7 +7,6 @@ import controller.action.GCAction;
 import data.AdvancedData;
 import data.GameControlData;
 import data.Rules;
-import data.Teams;
 
 
 /**
@@ -48,11 +47,19 @@ public class Goal extends GCAction
         data.team[side].score += set;
         if (set == 1) {
             if (data.secGameState != GameControlData.STATE2_PENALTYSHOOT) {
-                data.kickOffTeam = data.team[side].teamColor == GameControlData.TEAM_BLUE ? GameControlData.TEAM_RED : GameControlData.TEAM_BLUE;
+                data.kickOffTeam = data.team[1 - side].teamNumber;
+                data.kickOffReason = AdvancedData.KICKOFF_GOAL;
                 Log.setNextMessage("Goal for "+Rules.league.teamColorName[data.team[side].teamColor]);
-                ActionBoard.ready.perform(data);
+                if(data.team[side].score >= data.team[1-side].score + 10) {
+                    // mercy rule
+                    ActionBoard.secondHalf.perform(data);
+                    ActionBoard.finish.perform(data);
+                } else {
+                    ActionBoard.ready.perform(data);
+                }
             } else {
                 data.team[side].singleShots += (1<<(data.team[side].penaltyShot-1));
+                data.kickOffReason = AdvancedData.KICKOFF_PENALTYSHOOT;
                 Log.setNextMessage("Goal for "+Rules.league.teamColorName[data.team[side].teamColor]);
                 ActionBoard.finish.perform(data);
             }
@@ -73,7 +80,7 @@ public class Goal extends GCAction
         return ((set == 1)
               && (data.gameState == GameControlData.STATE_PLAYING)
               && ( (data.secGameState != GameControlData.STATE2_PENALTYSHOOT)
-                || (data.kickOffTeam == data.team[side].teamColor)) )
+                || (data.kickOffTeam == data.team[side].teamNumber)) )
             || data.testmode;
     }
 }

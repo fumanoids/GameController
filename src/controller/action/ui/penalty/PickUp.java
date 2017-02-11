@@ -26,6 +26,7 @@ public class PickUp extends Penalty
     {
         if (player.penalty == PlayerInfo.PENALTY_NONE) {
             data.whenPenalized[side][number] = data.getTime();
+            data.robotPenaltyCount[side][number] = 0;
         }
         
         player.penalty = PlayerInfo.PENALTY_SPL_REQUEST_FOR_PICKUP;

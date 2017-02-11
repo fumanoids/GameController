@@ -1,9 +1,6 @@
 package controller.action.ui.penalty;
 
-import java.util.ArrayList;
-
 import common.Log;
-import controller.EventHandler;
 import data.AdvancedData;
 import data.PlayerInfo;
 import data.Rules;
@@ -27,10 +24,11 @@ public class Substitute extends Penalty
     public void performOn(AdvancedData data, PlayerInfo player, int side, int number)
     {
         if (player.penalty != PlayerInfo.PENALTY_NONE) {
-            data.addToPenaltyQueue(side, data.whenPenalized[side][number], player.penalty);
+            data.addToPenaltyQueue(side, data.whenPenalized[side][number], player.penalty, data.robotPenaltyCount[side][number]);
         }
         
         player.penalty = PlayerInfo.PENALTY_SUBSTITUTE;
+        data.robotPenaltyCount[side][number] = 0;
         data.whenPenalized[side][number] = data.getTime();
         Log.state(data, "Leaving Player "+
                 Rules.league.teamColorName[data.team[side].teamColor]
