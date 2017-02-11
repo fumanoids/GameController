@@ -13,7 +13,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 
 import javax.swing.ButtonGroup;
@@ -166,18 +168,8 @@ public class StartInput extends JFrame implements Serializable
             @Override
                 public void actionPerformed(ActionEvent e)
                 {
-                    Object selected = team[0].getSelectedItem();
-                    if (selected == null) {
-                        return;
-                    }
-                    outTeam[0] = Integer.valueOf(((String)selected).split(" \\(")[1].split("\\)")[0]);
-                    reloadTeamColor(0);
-                    updateBackgrounds();
-                    setTeamIcon(0, outTeam[0]);
-                    teamIconLabel[0].setIcon(teamIcon[0]);
-                    teamIconLabel[0].repaint();
-                    teamIconLabel[1].repaint();
-                    startEnabling();
+                    String selected = (String) team[0].getSelectedItem();
+                    change_team_zero( 0, selected);
                 }
             }
         );
@@ -186,18 +178,8 @@ public class StartInput extends JFrame implements Serializable
             @Override
                 public void actionPerformed(ActionEvent e)
                 {
-                    Object selected = team[1].getSelectedItem();
-                    if (selected == null){
-                        return;
-                    }
-                    outTeam[1] = Integer.valueOf(((String)selected).split(" \\(")[1].split("\\)")[0]);
-                    reloadTeamColor(1);
-                    updateBackgrounds();
-                    setTeamIcon(1, outTeam[1]);
-                    teamIconLabel[1].setIcon(teamIcon[1]);
-                    teamIconLabel[0].repaint();
-                    teamIconLabel[1].repaint();
-                    startEnabling();
+                    String selected = (String) team[1].getSelectedItem();
+                    change_team_zero( 1, selected);
                 }
             }
         );
@@ -318,6 +300,29 @@ public class StartInput extends JFrame implements Serializable
         pack();
         setVisible(true);
     }
+
+    private ArrayList<String> getValidTeams(){
+
+        ArrayList<String> valid_teams = new ArrayList<String>();
+        Collections.addAll(valid_teams, Teams.getNames(true));
+        return valid_teams;
+    }
+
+    public void change_team_zero(int team_index, String selected_team) {
+        assert getValidTeams().contains(selected_team) : String.format("Selected team %1s not valid - must be one of %2s", selected_team, getValidTeams());
+        if (selected_team == null) {
+            return;
+        }
+        outTeam[team_index] = Integer.valueOf((selected_team).split(" \\(")[1].split("\\)")[0]);
+        reloadTeamColor(team_index);
+        updateBackgrounds();
+        setTeamIcon(team_index, outTeam[team_index]);
+        teamIconLabel[team_index].setIcon(teamIcon[team_index]);
+        teamIconLabel[0].repaint();
+        teamIconLabel[1].repaint();
+        startEnabling();
+    }
+
     /** Show in the combo box which teams are available for the selected league and competition*/
     private void showAvailableTeams() 
     {

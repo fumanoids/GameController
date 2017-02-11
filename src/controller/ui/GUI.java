@@ -116,7 +116,7 @@ public class GUI extends JFrame implements GCGUI
     private static final int STATE_FONT_SIZE = 12;
     private static final String WINDOW_TITLE = "GameController";
 
-    private static final String CONFIG_ROOT = System.getProperty("CONFIG_ROOT");
+    private static final String CONFIG_ROOT = System.getProperty("CONFIG_ROOT", "");
     private static final String ICONS_PATH = CONFIG_ROOT + "config/icons/";
 
     private static final String BACKGROUND_MID = "field.png";

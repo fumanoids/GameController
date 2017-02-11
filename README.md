@@ -34,7 +34,7 @@ Building the source code requires the JDK 1.7 or newer.
 
 Double-click GameController.jar or run 
 
-Usage: `java -jar GameController.jar {options}`
+Usage: `java [-DCONFIG_ROOT=PATH_TO_RESOURCES] -jar GameController.jar {options}`
 
     (-h | --help)                   display help
     (-t | --test)                   use test-mode - currently only disabling the
@@ -45,6 +45,8 @@ Usage: `java -jar GameController.jar {options}`
                                     select league (default is spl)
     (-w | --window)                 select window mode (default is fullscreen)
 
+If there are problems with finding the config path you can use the option
+ -DCONFIG_ROOT=PATH_TO_RESOURCES in order to link to different configurations 
 
 ### Start Dialog
 
