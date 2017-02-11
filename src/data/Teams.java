@@ -47,9 +47,11 @@ public class Teams
             this.colors = colors;
         }
     }
-    
+
+    /** Dynamically settable path to the config root folder */
+    private static final String CONFIG_ROOT = System.getProperty("CONFIG_ROOT");
     /** The path to the leagues directories. */
-    private static final String PATH = "config/";
+    private static final String PATH = CONFIG_ROOT + "config/";
     /** The name of the config file. */
     private static final String CONFIG = "teams.cfg";
     /** The charset to read the config file. */

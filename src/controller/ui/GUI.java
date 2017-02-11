@@ -115,27 +115,10 @@ public class GUI extends JFrame implements GCGUI
     private static final int TIMEOUT_FONT_SIZE = 14;
     private static final int STATE_FONT_SIZE = 12;
     private static final String WINDOW_TITLE = "GameController";
-    private static final String ICONS_PATH = "config/icons/";
-    private static final String[][] BACKGROUND_SIDE = {{"robot_left_blue.png",
-                                                        "robot_left_red.png",
-                                                        "robot_left_yellow.png",
-                                                        "robot_left_black.png",
-                                                        "robot_left_white.png",
-                                                        "robot_left_green.png",
-                                                        "robot_left_orange.png",
-                                                        "robot_left_purple.png",
-                                                        "robot_left_brown.png",
-                                                        "robot_left_gray.png"},
-                                                       {"robot_right_blue.png",
-                                                        "robot_right_red.png",
-                                                        "robot_right_yellow.png",
-                                                        "robot_right_black.png",
-                                                        "robot_right_white.png",
-                                                        "robot_right_green.png",
-                                                        "robot_right_orange.png",
-                                                        "robot_right_purple.png",
-                                                        "robot_right_brown.png",
-                                                        "robot_right_gray.png"}};
+
+    private static final String CONFIG_ROOT = System.getProperty("CONFIG_ROOT");
+    private static final String ICONS_PATH = CONFIG_ROOT + "config/icons/";
+
     private static final String BACKGROUND_MID = "field.png";
     private static final String BACKGROUND_CLOCK_SMALL = "time_ground_small.png";
     private static final String BACKGROUND_CLOCK = "time_ground.png";
@@ -291,7 +274,9 @@ public class GUI extends JFrame implements GCGUI
                 dispose();
             }
         });
-        
+
+
+
         clockImgReset = new ImageIcon(ICONS_PATH+CLOCK_RESET);
         clockImgPlay = new ImageIcon(ICONS_PATH+CLOCK_PLAY);
         clockImgPause = new ImageIcon(ICONS_PATH+CLOCK_PAUSE);
@@ -300,11 +285,12 @@ public class GUI extends JFrame implements GCGUI
         lanHighLatency = new ImageIcon(ICONS_PATH+HIGH_LATENCY);
         lanOffline = new ImageIcon(ICONS_PATH+OFFLINE);
         lanUnknown = new ImageIcon(ICONS_PATH+UNKNOWN_ONLINE_STATUS);
-        
+
+        // Made sure the backgroundside Size is league specific
         backgroundSide = new ImageIcon[2][Rules.league.teamColor.length];
-        for (int i=0; i<BACKGROUND_SIDE.length; i++) {
-            for (int j=0; j<BACKGROUND_SIDE[i].length; j++) {
-                backgroundSide[i][j] = new ImageIcon(ICONS_PATH+Rules.league.leagueDirectory+"/"+BACKGROUND_SIDE[i][j]);
+        for (int i=0; i<Rules.league.backgroundSide.length; i++) {
+            for (int j=0; j<Rules.league.backgroundSide[i].length; j++) {
+                backgroundSide[i][j] = new ImageIcon(ICONS_PATH+Rules.league.leagueDirectory+"/"+Rules.league.backgroundSide[i][j]);
             }
         }
         
@@ -619,6 +605,8 @@ public class GUI extends JFrame implements GCGUI
             goalInc[i].addActionListener(ActionBoard.goalInc[i]);
             kickOff[i].addActionListener(ActionBoard.kickOff[i]);
             for (int j=0; j<robot[i].length; j++) {
+                assert robot[i][j] != null : "Value in Robot Panel Matrix was not specified";
+                assert ActionBoard.robot[i][j] != null : "Value in ActionBoard.robot matrix was not specified";
                 robot[i][j].addActionListener(ActionBoard.robot[i][j]);
             }
             timeOut[i].addActionListener(ActionBoard.timeOut[i]);
