@@ -27,11 +27,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
-import data.GameControlData;
-import data.Rules;
-import data.SPL;
-import data.SPLDropIn;
-import data.Teams;
+import data.*;
 
 
 /**
@@ -72,13 +68,7 @@ public class StartInput extends JFrame implements Serializable
     
     /** If true, this GUI has finished and offers it`s input. */
     public boolean finished = false;
-
-    /** The inputs that can be read from this GUI when it has finished. */
-    public int[] outTeam = {0, 0};
-    public byte[] outTeamColor = new byte[2];
-    public boolean outFulltime;
-    public boolean outFullscreen;
-    public boolean outAutoColorChange;
+    private GamePreparationData gamePrepData;
 
     /** All the components of this GUI. */
     private ImagePanel[] teamContainer = new ImagePanel[2];
@@ -102,13 +92,17 @@ public class StartInput extends JFrame implements Serializable
 
     private HashMap<String, Image> images = new HashMap<String, Image>();
 
+
+
     /**
      * Creates a new StartInput.
-     * @param args The parameters that the jar file was started with.
      */
     public StartInput(boolean fullscreenMode)
     {
         super(WINDOW_TITLE);
+
+        // The game preparation data that is the end result of this window
+        gamePrepData = new GamePreparationData();
 
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         int width = gd.getDisplayMode().getWidth();
@@ -117,7 +111,8 @@ public class StartInput extends JFrame implements Serializable
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         setLayout(new FlowLayout(FlowLayout.CENTER, 0, STANDARD_SPACE));
-        
+
+
         String[] teams = getShortTeams();
         for (int i=0; i<2; i++) {
             teamContainer[i] = new ImagePanel(getImage(i, i == 0 ? "blue" : "red"));
@@ -169,7 +164,7 @@ public class StartInput extends JFrame implements Serializable
                 public void actionPerformed(ActionEvent e)
                 {
                     String selected = (String) team[0].getSelectedItem();
-                    change_team_zero( 0, selected);
+                    changeTeam( 0, selected);
                 }
             }
         );
@@ -179,7 +174,7 @@ public class StartInput extends JFrame implements Serializable
                 public void actionPerformed(ActionEvent e)
                 {
                     String selected = (String) team[1].getSelectedItem();
-                    change_team_zero( 1, selected);
+                    changeTeam( 1, selected);
                 }
             }
         );
@@ -281,6 +276,7 @@ public class StartInput extends JFrame implements Serializable
                 public void actionPerformed(ActionEvent e) {
                     startEnabling();
                 }});
+
         start = new JButton(START_LABEL);
         start.setPreferredSize(new Dimension(WINDOW_WIDTH/3-2*STANDARD_SPACE, START_HEIGHT));
         start.setEnabled(false);
@@ -288,9 +284,9 @@ public class StartInput extends JFrame implements Serializable
         start.addActionListener(new ActionListener() {
             @Override
                 public void actionPerformed(ActionEvent e) {
-                    outFulltime = fulltime.isSelected() && fulltime.isVisible();
-                    outFullscreen = fullscreen.getState();
-                    outAutoColorChange = autoColorChange.getState();
+                    gamePrepData.setFullTimeGame(fulltime.isSelected() && fulltime.isVisible());
+                    gamePrepData.setFullScreen(fullscreen.getState());
+                    gamePrepData.setAutoColorChange(autoColorChange.getState());
                     finished = true;
                 }});
                 
@@ -308,15 +304,18 @@ public class StartInput extends JFrame implements Serializable
         return valid_teams;
     }
 
-    public void change_team_zero(int team_index, String selected_team) {
+    public void changeTeam(int team_index, String selected_team) {
         assert getValidTeams().contains(selected_team) : String.format("Selected team %1s not valid - must be one of %2s", selected_team, getValidTeams());
         if (selected_team == null) {
             return;
         }
-        outTeam[team_index] = Integer.valueOf((selected_team).split(" \\(")[1].split("\\)")[0]);
+        GamePreparationData.PrepTeam prepTeam = gamePrepData.getPrepTeam(team_index);
+        int team_number = Integer.valueOf((selected_team).split(" \\(")[1].split("\\)")[0]);
+        prepTeam.setTeamNumber(team_number);
+
         reloadTeamColor(team_index);
         updateBackgrounds();
-        setTeamIcon(team_index, outTeam[team_index]);
+        setTeamIcon(team_index, team_number);
         teamIconLabel[team_index].setIcon(teamIcon[team_index]);
         teamIconLabel[0].repaint();
         teamIconLabel[1].repaint();
@@ -326,8 +325,6 @@ public class StartInput extends JFrame implements Serializable
     /** Show in the combo box which teams are available for the selected league and competition*/
     private void showAvailableTeams() 
     {
-        outTeam[0] = 0;
-        outTeam[1] = 0;
         for (int i=0; i < 2; i++) {
             team[i].removeAllItems();
             String[] names = getShortTeams();
@@ -339,7 +336,7 @@ public class StartInput extends JFrame implements Serializable
                     team[i].addItem(names[j]);
                 }
             }
-            setTeamIcon(i, outTeam[i]);
+            setTeamIcon(i, gamePrepData.getPrepTeam(i).getTeamNumber());
             teamIconLabel[i].setIcon(teamIcon[i]);
             teamIconLabel[i].repaint();
         }
@@ -411,8 +408,8 @@ public class StartInput extends JFrame implements Serializable
      */
     private void startEnabling()
     {
-        start.setEnabled(outTeam[0] != outTeam[1] &&
-                (fulltime.isSelected() || nofulltime.isSelected() || !fulltime.isVisible()));
+        // Not yet the best but a start of separating the data model behind this window and the representation
+        start.setEnabled(gamePrepData.canStart() && (fulltime.isSelected() || nofulltime.isSelected() || !fulltime.isVisible()));
     }
     
     private Image getImage(int side, String color)
@@ -433,30 +430,32 @@ public class StartInput extends JFrame implements Serializable
     }
 
     private void updateTeamColorIndicator(final int team) {
-        teamColorChange[team].setToolTipText(String.format("Change to alternative team color (%s)", Rules.league.teamColorName[fromColorName(colorNames[team][1])]));
-        teamColorChange[team].setBackground(Rules.league.teamColor[fromColorName(colorNames[team][0])]);
+        teamColorChange[team].setToolTipText(String.format("Change to alternative team color (%s)", Rules.league.teamColorName[GameControlData.fromColorName(colorNames[team][1])]));
+        teamColorChange[team].setBackground(Rules.league.teamColor[GameControlData.fromColorName(colorNames[team][0])]);
     }
 
-    private void reloadTeamColor(final int team)
+    private void reloadTeamColor(final int team_idx)
     {
-        colorNames[team] = Teams.getColors(outTeam[team]).clone();
-        if (colorNames[team] == null || colorNames[team].length == 0) {
-            colorNames[team] = new String[]{"blue", "red"};
-        } else if (colorNames[team].length == 1) {
-            colorNames[team] = new String[]{colorNames[team][0], !"red".equals(colorNames[team][0]) ? "red" : "blue"};
+        GamePreparationData.PrepTeam pt = gamePrepData.getPrepTeam(team_idx);
+
+        colorNames[team_idx] = Teams.getColors(pt.getTeamNumber()).clone();
+        if (colorNames[team_idx] == null || colorNames[team_idx].length == 0) {
+            colorNames[team_idx] = new String[]{"blue", "red"};
+        } else if (colorNames[team_idx].length == 1) {
+            colorNames[team_idx] = new String[]{colorNames[team_idx][0], !"red".equals(colorNames[team_idx][0]) ? "red" : "blue"};
         }
-        if (team == 1) {
-            String[] otherColors = Teams.getColors(outTeam[0]);
+        if (team_idx == 1) {
+            String[] otherColors = Teams.getColors(gamePrepData.getFirstTeam().getTeamNumber());
             if ((otherColors == null || otherColors.length == 0)) {
                 otherColors = new String[]{"blue"};
             }
-            if (colorNames[team][0].equals(otherColors[0])) {
+            if (colorNames[team_idx][0].equals(otherColors[0])) {
                 switchTeamColor(1);
             } else {
-                updateTeamColorIndicator(team);
+                updateTeamColorIndicator(team_idx);
             }
         } else {
-            updateTeamColorIndicator(team);
+            updateTeamColorIndicator(team_idx);
         }
     }
 
@@ -464,33 +463,12 @@ public class StartInput extends JFrame implements Serializable
     {
         for (int i = 0; i < 2; ++i) {
             teamContainer[i].setImage(getImage(i, colorNames[i][0]));
-            outTeamColor[i] = fromColorName(colorNames[i][0]);
+            gamePrepData.getPrepTeam(i).setTeamColor(colorNames[i][0]);
         }
     }
 
-    private static byte fromColorName(final String colorName) {
-        switch (colorName) {
-            case "blue":
-                return GameControlData.TEAM_BLUE;
-            case "red":
-                return GameControlData.TEAM_RED;
-            case "yellow":
-                return GameControlData.TEAM_YELLOW;
-            case "black":
-                return GameControlData.TEAM_BLACK;
-            case "green":
-                return GameControlData.TEAM_GREEN;
-            case "orange":
-                return GameControlData.TEAM_ORANGE;
-            case "purple":
-                return GameControlData.TEAM_PURPLE;
-            case "brown":
-                return GameControlData.TEAM_BROWN;
-            case "gray":
-                return GameControlData.TEAM_GRAY;
-            default:
-                return GameControlData.TEAM_WHITE;
-        }
+    public GamePreparationData getGamePreparationData() {
+        return gamePrepData;
     }
 
     /**
